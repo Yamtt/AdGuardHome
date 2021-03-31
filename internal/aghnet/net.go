@@ -393,3 +393,34 @@ func ReverseAddr(ip net.IP) (arpa string) {
 
 	return b.String()
 }
+
+// CollectAllIfacesAddrs returns the slice of all network interfaces IP
+// addresses without port number.
+func CollectAllIfacesAddrs() (addrs []string, err error) {
+	var ifaces []net.Interface
+	ifaces, err = net.Interfaces()
+	if err != nil {
+		return nil, fmt.Errorf("getting network interfaces: %w", err)
+	}
+
+	for _, iface := range ifaces {
+		var ifaceAddrs []net.Addr
+		ifaceAddrs, err = iface.Addrs()
+		if err != nil {
+			return nil, fmt.Errorf("getting addresses for %q: %w", iface.Name, err)
+		}
+
+		for _, addr := range ifaceAddrs {
+			cidr := addr.String()
+			var ip net.IP
+			ip, _, err = net.ParseCIDR(cidr)
+			if err != nil {
+				return nil, fmt.Errorf("parsing %q as cidr: %w", cidr, err)
+			}
+
+			addrs = append(addrs, ip.String())
+		}
+	}
+
+	return addrs, nil
+}

@@ -38,47 +38,56 @@ type dnsConfig struct {
 	CacheSize         *uint32 `json:"cache_size"`
 	CacheMinTTL       *uint32 `json:"cache_ttl_min"`
 	CacheMaxTTL       *uint32 `json:"cache_ttl_max"`
+
+	ResolveClients    *bool     `json:"resolve_clients"`
+	LocalPTRUpstreams *[]string `json:"local_ptr_upstreams"`
 }
 
 func (s *Server) getDNSConfig() dnsConfig {
 	s.RLock()
+	defer s.RUnlock()
+
 	upstreams := stringArrayDup(s.conf.UpstreamDNS)
 	upstreamFile := s.conf.UpstreamDNSFileName
 	bootstraps := stringArrayDup(s.conf.BootstrapDNS)
 	protectionEnabled := s.conf.ProtectionEnabled
 	blockingMode := s.conf.BlockingMode
-	BlockingIPv4 := s.conf.BlockingIPv4
-	BlockingIPv6 := s.conf.BlockingIPv6
-	Ratelimit := s.conf.Ratelimit
-	EnableEDNSClientSubnet := s.conf.EnableEDNSClientSubnet
-	EnableDNSSEC := s.conf.EnableDNSSEC
-	AAAADisabled := s.conf.AAAADisabled
-	CacheSize := s.conf.CacheSize
-	CacheMinTTL := s.conf.CacheMinTTL
-	CacheMaxTTL := s.conf.CacheMaxTTL
+	blockingIPv4 := s.conf.BlockingIPv4
+	blockingIPv6 := s.conf.BlockingIPv6
+	ratelimit := s.conf.Ratelimit
+	enableEDNSClientSubnet := s.conf.EnableEDNSClientSubnet
+	enableDNSSEC := s.conf.EnableDNSSEC
+	aaaaDisabled := s.conf.AAAADisabled
+	cacheSize := s.conf.CacheSize
+	cacheMinTTL := s.conf.CacheMinTTL
+	cacheMaxTTL := s.conf.CacheMaxTTL
+	resolveClients := s.conf.ResolveClients
+	localPTRUpstreams := stringArrayDup(s.conf.LocalPTRResolvers)
 	var upstreamMode string
 	if s.conf.FastestAddr {
 		upstreamMode = "fastest_addr"
 	} else if s.conf.AllServers {
 		upstreamMode = "parallel"
 	}
-	s.RUnlock()
+
 	return dnsConfig{
 		Upstreams:         &upstreams,
 		UpstreamsFile:     &upstreamFile,
 		Bootstraps:        &bootstraps,
 		ProtectionEnabled: &protectionEnabled,
 		BlockingMode:      &blockingMode,
-		BlockingIPv4:      BlockingIPv4,
-		BlockingIPv6:      BlockingIPv6,
-		RateLimit:         &Ratelimit,
-		EDNSCSEnabled:     &EnableEDNSClientSubnet,
-		DNSSECEnabled:     &EnableDNSSEC,
-		DisableIPv6:       &AAAADisabled,
-		CacheSize:         &CacheSize,
-		CacheMinTTL:       &CacheMinTTL,
-		CacheMaxTTL:       &CacheMaxTTL,
+		BlockingIPv4:      blockingIPv4,
+		BlockingIPv6:      blockingIPv6,
+		RateLimit:         &ratelimit,
+		EDNSCSEnabled:     &enableEDNSClientSubnet,
+		DNSSECEnabled:     &enableDNSSEC,
+		DisableIPv6:       &aaaaDisabled,
+		CacheSize:         &cacheSize,
+		CacheMinTTL:       &cacheMinTTL,
+		CacheMaxTTL:       &cacheMaxTTL,
 		UpstreamMode:      &upstreamMode,
+		ResolveClients:    &resolveClients,
+		LocalPTRUpstreams: &localPTRUpstreams,
 	}
 }
 
@@ -226,6 +235,11 @@ func (s *Server) setConfigRestartable(dc dnsConfig) (restart bool) {
 		restart = true
 	}
 
+	if dc.LocalPTRUpstreams != nil {
+		s.conf.LocalPTRResolvers = *dc.LocalPTRUpstreams
+		restart = true
+	}
+
 	if dc.UpstreamsFile != nil {
 		s.conf.UpstreamDNSFileName = *dc.UpstreamsFile
 		restart = true
@@ -293,6 +307,10 @@ func (s *Server) setConfig(dc dnsConfig) (restart bool) {
 		s.conf.FastestAddr = *dc.UpstreamMode == "fastest_addr"
 	}
 
+	if dc.ResolveClients != nil {
+		s.conf.ResolveClients = *dc.ResolveClients
+	}
+
 	return s.setConfigRestartable(dc)
 }
 
@@ -301,7 +319,10 @@ type upstreamJSON struct {
 	BootstrapDNS []string `json:"bootstrap_dns"` // Bootstrap DNS
 }
 
-// ValidateUpstreams validates each upstream and returns an error if any upstream is invalid or if there are no default upstreams specified
+// ValidateUpstreams validates each upstream and returns an error if any
+// upstream is invalid or if there are no default upstreams specified.
+//
+// TODO(e.burkov): Move into aghnet or even into dnsproxy.
 func ValidateUpstreams(upstreams []string) error {
 	// No need to validate comments
 	upstreams = filterOutComments(upstreams)

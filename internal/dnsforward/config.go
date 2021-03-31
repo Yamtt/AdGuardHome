@@ -149,6 +149,13 @@ type ServerConfig struct {
 
 	// Register an HTTP handler
 	HTTPRegister func(string, string, func(http.ResponseWriter, *http.Request))
+
+	// ResolveClients signals if the RDNS should resolve clients' addresses.
+	ResolveClients bool
+
+	// LocalPTRResolvers is a slice of addresses to be used as upstreams for
+	// resolving PTR queries for local addresses.
+	LocalPTRResolvers []string
 }
 
 // if any of ServerConfig values are zero, then default values from below are used
