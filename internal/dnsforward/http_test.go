@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -188,7 +189,7 @@ func TestDNSForwardHTTTP_handleSetConfig(t *testing.T) {
 	}}
 
 	var f *os.File
-	f, err = os.Open("testdata/handleSetConfig.txt")
+	f, err = os.Open(filepath.Join("testdata", "handleSetConfig.txt"))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, f.Close())
