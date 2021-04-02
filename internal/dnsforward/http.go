@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/AdguardTeam/AdGuardHome/internal/aghstrings"
 	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/AdguardTeam/golibs/log"
@@ -46,9 +47,9 @@ func (s *Server) getDNSConfig() dnsConfig {
 	s.RLock()
 	defer s.RUnlock()
 
-	upstreams := stringArrayDup(s.conf.UpstreamDNS)
+	upstreams := aghstrings.CloneSlice(s.conf.UpstreamDNS)
 	upstreamFile := s.conf.UpstreamDNSFileName
-	bootstraps := stringArrayDup(s.conf.BootstrapDNS)
+	bootstraps := aghstrings.CloneSlice(s.conf.BootstrapDNS)
 	protectionEnabled := s.conf.ProtectionEnabled
 	blockingMode := s.conf.BlockingMode
 	blockingIPv4 := s.conf.BlockingIPv4
@@ -61,7 +62,7 @@ func (s *Server) getDNSConfig() dnsConfig {
 	cacheMinTTL := s.conf.CacheMinTTL
 	cacheMaxTTL := s.conf.CacheMaxTTL
 	resolveClients := s.conf.ResolveClients
-	localPTRUpstreams := stringArrayDup(s.conf.LocalPTRResolvers)
+	localPTRUpstreams := aghstrings.CloneSlice(s.conf.LocalPTRResolvers)
 	var upstreamMode string
 	if s.conf.FastestAddr {
 		upstreamMode = "fastest_addr"

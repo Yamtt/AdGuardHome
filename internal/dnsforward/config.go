@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/AdguardTeam/AdGuardHome/internal/aghstrings"
 	"github.com/AdguardTeam/AdGuardHome/internal/dnsfilter"
-	"github.com/AdguardTeam/AdGuardHome/internal/util"
 	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/AdguardTeam/golibs/log"
@@ -281,7 +281,7 @@ func (s *Server) prepareUpstreamSettings() error {
 		}
 		d := string(data)
 		for len(d) != 0 {
-			s := util.SplitNext(&d, '\n')
+			s := aghstrings.SplitNext(&d, '\n')
 			upstreams = append(upstreams, s)
 		}
 		log.Debug("dns: using %d upstream servers from file %s", len(upstreams), s.conf.UpstreamDNSFileName)

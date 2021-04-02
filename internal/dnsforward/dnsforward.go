@@ -14,6 +14,7 @@ import (
 
 	"github.com/AdguardTeam/AdGuardHome/internal/agherr"
 	"github.com/AdguardTeam/AdGuardHome/internal/aghnet"
+	"github.com/AdguardTeam/AdGuardHome/internal/aghstrings"
 	"github.com/AdguardTeam/AdGuardHome/internal/dhcpd"
 	"github.com/AdguardTeam/AdGuardHome/internal/dnsfilter"
 	"github.com/AdguardTeam/AdGuardHome/internal/querylog"
@@ -176,12 +177,12 @@ func (s *Server) WriteDiskConfig(c *FilteringConfig) {
 	s.RLock()
 	sc := s.conf.FilteringConfig
 	*c = sc
-	c.RatelimitWhitelist = stringArrayDup(sc.RatelimitWhitelist)
-	c.BootstrapDNS = stringArrayDup(sc.BootstrapDNS)
-	c.AllowedClients = stringArrayDup(sc.AllowedClients)
-	c.DisallowedClients = stringArrayDup(sc.DisallowedClients)
-	c.BlockedHosts = stringArrayDup(sc.BlockedHosts)
-	c.UpstreamDNS = stringArrayDup(sc.UpstreamDNS)
+	c.RatelimitWhitelist = aghstrings.CloneSlice(sc.RatelimitWhitelist)
+	c.BootstrapDNS = aghstrings.CloneSlice(sc.BootstrapDNS)
+	c.AllowedClients = aghstrings.CloneSlice(sc.AllowedClients)
+	c.DisallowedClients = aghstrings.CloneSlice(sc.DisallowedClients)
+	c.BlockedHosts = aghstrings.CloneSlice(sc.BlockedHosts)
+	c.UpstreamDNS = aghstrings.CloneSlice(sc.UpstreamDNS)
 	s.RUnlock()
 }
 
@@ -190,7 +191,7 @@ func (s *Server) RDNSSettings() (localPTRResolvers []string, resolveClients bool
 	s.RLock()
 	defer s.RUnlock()
 
-	return stringArrayDup(s.conf.LocalPTRResolvers), s.conf.ResolveClients
+	return aghstrings.CloneSlice(s.conf.LocalPTRResolvers), s.conf.ResolveClients
 }
 
 // Resolve - get IP addresses by host name from an upstream server.
@@ -290,32 +291,6 @@ func (s *Server) startLocked() error {
 
 const defaultLocalTimeout = 5 * time.Second
 
-// stringsSetSubtract subtracts b from a interpreted as sets.
-//
-// TODO(e.burkov): Move into our internal package for working with strings.
-func stringsSetSubtract(a, b []string) (c []string) {
-	// unit is an object to be used as value in set.
-	type unit = struct{}
-
-	cSet := make(map[string]unit)
-	for _, k := range a {
-		cSet[k] = unit{}
-	}
-
-	for _, k := range b {
-		delete(cSet, k)
-	}
-
-	c = make([]string, len(cSet))
-	i := 0
-	for k := range cSet {
-		c[i] = k
-		i++
-	}
-
-	return c
-}
-
 // collectDNSIPAddrs returns the slice of IP addresses without port number which
 // we are listening on.  For internal use only.
 func (s *Server) collectDNSIPAddrs() (addrs []string, err error) {
@@ -375,7 +350,7 @@ func (s *Server) setupResolvers(localAddrs []string) (err error) {
 	// is not really applicable here since in case of listening on
 	// all network interfaces we should check the whole interface's
 	// network to cut off all the loopback addresses as well.
-	localAddrs = stringsSetSubtract(localAddrs, ourAddrs)
+	localAddrs = aghstrings.SetSubtract(localAddrs, ourAddrs)
 
 	s.localResolvers, err = aghnet.NewMultiAddrExchanger(localAddrs, defaultLocalTimeout)
 	if err != nil {
