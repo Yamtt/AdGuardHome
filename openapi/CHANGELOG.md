@@ -4,6 +4,16 @@
 
 ## v0.106: API changes
 
+### New fields `"resolve_clients"` and `"local_ptr_upstreams"` in DNS configuration
+
+* The new optional field `"resolve_clients"` of `DNSConfig` is used to turn
+  resolving clients' addresses on and off.
+
+* The new optional field `"local_ptr_upstreams"` of `"DNSConfig"` contains the
+  upstream servers for resolving addresses from locally-served networks.  The
+  empty `"local_ptr_resolvers"` states that AGH should use resolvers provided by
+  OS.
+
 ### New `"client_info"` field in `GET /querylog` response
 
 * The new optional field `"client_info"` of `QueryLogItem` objects contains
