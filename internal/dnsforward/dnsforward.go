@@ -190,10 +190,7 @@ func (s *Server) RDNSSettings() (localPTRResolvers []string, resolveClients bool
 	s.RLock()
 	defer s.RUnlock()
 
-	localPTRResolvers = stringArrayDup(s.conf.LocalPTRResolvers)
-	resolveClients = s.conf.ResolveClients
-
-	return localPTRResolvers, resolveClients
+	return stringArrayDup(s.conf.LocalPTRResolvers), s.conf.ResolveClients
 }
 
 // Resolve - get IP addresses by host name from an upstream server.

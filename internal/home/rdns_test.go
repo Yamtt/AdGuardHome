@@ -13,6 +13,7 @@ import (
 	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/AdguardTeam/golibs/cache"
 	"github.com/AdguardTeam/golibs/log"
+	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -101,6 +102,32 @@ func TestRDNS_Begin(t *testing.T) {
 	}
 }
 
+// rDNSExchanger is a mock dnsforward.RDNSExchanger implementation for tests.
+type rDNSExchanger struct {
+	aghtest.Exchanger
+}
+
+// Exchange implements dnsforward.RDNSExchanger interface for *RDNSExchanger.
+func (e *rDNSExchanger) Exchange(ip net.IP) (host string, err error) {
+	req := &dns.Msg{
+		Question: []dns.Question{{
+			Name:  ip.String(),
+			Qtype: dns.TypePTR,
+		}},
+	}
+
+	resp, err := e.Exchanger.Exchange(req)
+	if err != nil {
+		return "", err
+	}
+
+	if len(resp.Answer) == 0 {
+		return "", nil
+	}
+
+	return resp.Answer[0].Header().Name, nil
+}
+
 func TestRDNS_WorkerLoop(t *testing.T) {
 	aghtest.ReplaceLogLevel(t, log.DEBUG)
 	w := &bytes.Buffer{}
@@ -143,7 +170,7 @@ func TestRDNS_WorkerLoop(t *testing.T) {
 		}
 		ch := make(chan net.IP)
 		rdns := &RDNS{
-			exchanger: &aghtest.RDNSExchanger{
+			exchanger: &rDNSExchanger{
 				Exchanger: aghtest.Exchanger{
 					Ups: tc.ups,
 				},

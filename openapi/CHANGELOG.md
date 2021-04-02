@@ -12,7 +12,7 @@
 * The new optional field `"local_ptr_upstreams"` of `"DNSConfig"` contains the
   upstream servers for resolving addresses from locally-served networks.  The
   empty `"local_ptr_resolvers"` states that AGH should use resolvers provided by
-  OS.
+  the operating system.
 
 ### New `"client_info"` field in `GET /querylog` response
 

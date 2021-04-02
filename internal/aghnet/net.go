@@ -415,7 +415,7 @@ func CollectAllIfacesAddrs() (addrs []string, err error) {
 			var ip net.IP
 			ip, _, err = net.ParseCIDR(cidr)
 			if err != nil {
-				return nil, fmt.Errorf("parsing %q as cidr: %w", cidr, err)
+				return nil, fmt.Errorf("parsing cidr: %w", err)
 			}
 
 			addrs = append(addrs, ip.String())
