@@ -11,7 +11,6 @@ require (
 	github.com/digineo/go-ipset/v2 v2.2.1
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-ping/ping v0.0.0-20210216210419-25d1413fb7bb
-	github.com/go-playground/assert/v2 v2.0.1
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packr v1.30.1
 	github.com/gobuffalo/packr/v2 v2.8.1 // indirect

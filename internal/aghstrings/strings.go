@@ -3,11 +3,18 @@ package aghstrings
 
 import "strings"
 
-// CloneSlice returns the copy of a.
-func CloneSlice(a []string) []string {
-	a2 := make([]string, len(a))
-	copy(a2, a)
-	return a2
+// CloneSlice returns the exact copy of a.
+func CloneSlice(a []string) (b []string) {
+	return append(b, a...)
+}
+
+// CloneSliceOrEmpty returns the copy of a or empty strings slice if a is nil.
+func CloneSliceOrEmpty(a []string) (b []string) {
+	if a == nil {
+		return []string{}
+	}
+
+	return CloneSlice(a)
 }
 
 // InSlice checks if string is in the slice of strings.
@@ -47,23 +54,40 @@ func SetSubtract(a, b []string) (c []string) {
 
 // SplitNext splits string by a byte and returns the first chunk skipping empty
 // ones.  Whitespaces are trimmed.
-func SplitNext(str *string, splitBy byte) string {
-	i := strings.IndexByte(*str, splitBy)
-	s := ""
-	if i != -1 {
-		s = (*str)[0:i]
-		*str = (*str)[i+1:]
-		k := 0
-		ch := rune(0)
-		for k, ch = range *str {
-			if byte(ch) != splitBy {
-				break
-			}
-		}
-		*str = (*str)[k:]
-	} else {
-		s = *str
-		*str = ""
+func SplitNext(s *string, sep rune) (chunk string) {
+	if s == nil {
+		return chunk
 	}
-	return strings.TrimSpace(s)
+
+	i := strings.IndexByte(*s, byte(sep))
+	if i == -1 {
+		chunk = *s
+		*s = ""
+
+		return strings.TrimSpace(chunk)
+	}
+
+	chunk = (*s)[:i]
+	*s = (*s)[i+1:]
+	var j int
+	var r rune
+	for j, r = range *s {
+		if r != sep {
+			break
+		}
+	}
+
+	*s = (*s)[j:]
+
+	return strings.TrimSpace(chunk)
+}
+
+// WriteToBuilder is a convenient wrapper for strings.(*Builder).WriteString
+// that deals with multiple strings and ignores errors that are guaranteed to be
+// nil.
+func WriteToBuilder(b *strings.Builder, strs ...string) {
+	// TODO(e.burkov): Recover from panic?
+	for _, s := range strs {
+		_, _ = b.WriteString(s)
+	}
 }

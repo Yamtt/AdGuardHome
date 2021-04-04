@@ -47,9 +47,9 @@ func (s *Server) getDNSConfig() dnsConfig {
 	s.RLock()
 	defer s.RUnlock()
 
-	upstreams := aghstrings.CloneSlice(s.conf.UpstreamDNS)
+	upstreams := aghstrings.CloneSliceOrEmpty(s.conf.UpstreamDNS)
 	upstreamFile := s.conf.UpstreamDNSFileName
-	bootstraps := aghstrings.CloneSlice(s.conf.BootstrapDNS)
+	bootstraps := aghstrings.CloneSliceOrEmpty(s.conf.BootstrapDNS)
 	protectionEnabled := s.conf.ProtectionEnabled
 	blockingMode := s.conf.BlockingMode
 	blockingIPv4 := s.conf.BlockingIPv4
@@ -62,7 +62,7 @@ func (s *Server) getDNSConfig() dnsConfig {
 	cacheMinTTL := s.conf.CacheMinTTL
 	cacheMaxTTL := s.conf.CacheMaxTTL
 	resolveClients := s.conf.ResolveClients
-	localPTRUpstreams := aghstrings.CloneSlice(s.conf.LocalPTRResolvers)
+	localPTRUpstreams := aghstrings.CloneSliceOrEmpty(s.conf.LocalPTRResolvers)
 	var upstreamMode string
 	if s.conf.FastestAddr {
 		upstreamMode = "fastest_addr"
