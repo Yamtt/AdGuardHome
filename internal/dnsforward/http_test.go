@@ -1,6 +1,7 @@
 package dnsforward
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"net"
@@ -8,7 +9,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/AdguardTeam/AdGuardHome/internal/dnsfilter"
@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func openCases(t *testing.T, casesFileName string, cases interface{}) {
+func loadTestData(t *testing.T, casesFileName string, cases interface{}) {
 	t.Helper()
 
 	var f *os.File
@@ -58,15 +58,14 @@ func TestDNSForwardHTTTP_handleGetConfig(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	const casesFileName = "handleGetConfig_cases.json"
 	testCases := []struct {
-		Name string `json:"name"`
 		conf func() ServerConfig
-		Want string `json:"want"`
+		name string
 	}{{
 		conf: func() ServerConfig {
 			return defaultConf
 		},
+		name: "all_right",
 	}, {
 		conf: func() ServerConfig {
 			conf := defaultConf
@@ -74,6 +73,7 @@ func TestDNSForwardHTTTP_handleGetConfig(t *testing.T) {
 
 			return conf
 		},
+		name: "fastest_addr",
 	}, {
 		conf: func() ServerConfig {
 			conf := defaultConf
@@ -81,18 +81,24 @@ func TestDNSForwardHTTTP_handleGetConfig(t *testing.T) {
 
 			return conf
 		},
+		name: "parallel",
 	}}
-	openCases(t, casesFileName, &testCases)
+	const casesFileName = "handleGetConfig_cases.json"
+	var data map[string]json.RawMessage
+	loadTestData(t, casesFileName, &data)
 
 	for _, tc := range testCases {
-		t.Run(tc.Name, func(t *testing.T) {
+		caseWant, ok := data[tc.name]
+		require.True(t, ok)
+
+		t.Run(tc.name, func(t *testing.T) {
 			t.Cleanup(w.Body.Reset)
 
 			s.conf = tc.conf()
 			s.handleGetConfig(w, nil)
 
 			assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-			assert.Equal(t, tc.Want, w.Body.String())
+			assert.JSONEq(t, string(caseWant), w.Body.String())
 		})
 	}
 }
@@ -127,32 +133,86 @@ func TestDNSForwardHTTTP_handleSetConfig(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
+	testCases := []struct {
+		name    string
+		wantSet string
+	}{{
+		name:    "upstream_dns",
+		wantSet: "",
+	}, {
+		name:    "bootstraps",
+		wantSet: "",
+	}, {
+		name:    "blocking_mode_good",
+		wantSet: "",
+	}, {
+		name:    "blocking_mode_bad",
+		wantSet: "blocking_mode: incorrect value\n",
+	}, {
+		name:    "ratelimit",
+		wantSet: "",
+	}, {
+		name:    "edns_cs_enabled",
+		wantSet: "",
+	}, {
+		name:    "dnssec_enabled",
+		wantSet: "",
+	}, {
+		name:    "cache_size",
+		wantSet: "",
+	}, {
+		name:    "upstream_mode_parallel",
+		wantSet: "",
+	}, {
+		name:    "upstream_mode_fastest_addr",
+		wantSet: "",
+	}, {
+		name:    "upstream_dns_bad",
+		wantSet: "wrong upstreams specification: missing port in address\n",
+	}, {
+		name:    "bootstraps_bad",
+		wantSet: "a can not be used as bootstrap dns cause: invalid bootstrap server address: Resolver a is not eligible to be a bootstrap DNS server\n",
+	}, {
+		name:    "cache_bad_ttl",
+		wantSet: "cache_ttl_min must be less or equal than cache_ttl_max\n",
+	}, {
+		name:    "upstream_mode_bad",
+		wantSet: "upstream_mode: incorrect value\n",
+	}, {
+		name:    "local_ptr_upstreams_good",
+		wantSet: "",
+	}, {
+		name:    "local_ptr_upstreams_null",
+		wantSet: "",
+	}}
+
 	const casesFileName = "handleSetConfig_cases.json"
-	var testCases []struct {
-		Name    string `json:"name"`
-		Req     string `json:"req"`
-		WantSet string `json:"wantSet"`
-		WantGet string `json:"wantGet"`
+	var data map[string]struct {
+		Req  json.RawMessage `json:"req"`
+		Want json.RawMessage `json:"want"`
 	}
-	openCases(t, casesFileName, &testCases)
+	loadTestData(t, casesFileName, &data)
 
 	for _, tc := range testCases {
-		t.Run(tc.Name, func(t *testing.T) {
+		caseData, ok := data[tc.name]
+		require.True(t, ok)
+
+		t.Run(tc.name, func(t *testing.T) {
 			t.Cleanup(func() {
 				s.conf = defaultConf
 			})
 
-			rBody := ioutil.NopCloser(strings.NewReader(tc.Req))
+			rBody := ioutil.NopCloser(bytes.NewReader(caseData.Req))
 			var r *http.Request
 			r, err = http.NewRequest(http.MethodPost, "http://example.com", rBody)
 			require.Nil(t, err)
 
 			s.handleSetConfig(w, r)
-			assert.Equal(t, tc.WantSet, w.Body.String())
+			assert.Equal(t, tc.wantSet, w.Body.String())
 			w.Body.Reset()
 
 			s.handleGetConfig(w, nil)
-			assert.Equal(t, tc.WantGet, w.Body.String())
+			assert.JSONEq(t, string(caseData.Want), w.Body.String())
 			w.Body.Reset()
 		})
 	}
