@@ -28,30 +28,6 @@ func InSlice(strs []string, str string) (ok bool) {
 	return false
 }
 
-// SetSubtract subtracts b from a interpreted as sets.
-func SetSubtract(a, b []string) (c []string) {
-	// unit is an object to be used as value in set.
-	type unit = struct{}
-
-	cSet := make(map[string]unit)
-	for _, k := range a {
-		cSet[k] = unit{}
-	}
-
-	for _, k := range b {
-		delete(cSet, k)
-	}
-
-	c = make([]string, len(cSet))
-	i := 0
-	for k := range cSet {
-		c[i] = k
-		i++
-	}
-
-	return c
-}
-
 // SplitNext splits string by a byte and returns the first chunk skipping empty
 // ones.  Whitespaces are trimmed.
 func SplitNext(s *string, sep rune) (chunk string) {

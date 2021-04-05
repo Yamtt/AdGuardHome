@@ -325,6 +325,30 @@ func (s *Server) collectDNSIPAddrs() (addrs []string, err error) {
 	return addrs[:i], nil
 }
 
+// stringSetSubtract subtracts b from a interpreted as sets.
+func stringSetSubtract(a, b []string) (c []string) {
+	// unit is an object to be used as value in set.
+	type unit = struct{}
+
+	cSet := make(map[string]unit)
+	for _, k := range a {
+		cSet[k] = unit{}
+	}
+
+	for _, k := range b {
+		delete(cSet, k)
+	}
+
+	c = make([]string, len(cSet))
+	i := 0
+	for k := range cSet {
+		c[i] = k
+		i++
+	}
+
+	return c
+}
+
 // setupResolvers initializes the resolvers for local addresses.  For internal
 // use only.
 func (s *Server) setupResolvers(localAddrs []string) (err error) {
@@ -350,7 +374,7 @@ func (s *Server) setupResolvers(localAddrs []string) (err error) {
 	// is not really applicable here since in case of listening on
 	// all network interfaces we should check the whole interface's
 	// network to cut off all the loopback addresses as well.
-	localAddrs = aghstrings.SetSubtract(localAddrs, ourAddrs)
+	localAddrs = stringSetSubtract(localAddrs, ourAddrs)
 
 	s.localResolvers, err = aghnet.NewMultiAddrExchanger(localAddrs, defaultLocalTimeout)
 	if err != nil {
