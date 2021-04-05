@@ -94,7 +94,6 @@ func (s *Server) handleDNSRequest(_ *proxy.Proxy, d *proxy.DNSContext) error {
 		processQueryLogsAndStats,
 	}
 	for _, process := range mods {
-		log.Debug("Setts: %+v", ctx.setts)
 		r := process(ctx)
 		switch r {
 		case resultCodeSuccess:
