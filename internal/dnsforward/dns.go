@@ -94,6 +94,7 @@ func (s *Server) handleDNSRequest(_ *proxy.Proxy, d *proxy.DNSContext) error {
 		processQueryLogsAndStats,
 	}
 	for _, process := range mods {
+		log.Debug("Setts: %+v", ctx.setts)
 		r := process(ctx)
 		switch r {
 		case resultCodeSuccess:
@@ -293,6 +294,14 @@ func (s *Server) processRestrictLocal(ctx *dnsContext) (rc resultCode) {
 	// Do not perform unreversing ever again.
 	ctx.unreversedReqIP = ip
 
+	// Disable redundant filtering.
+	filterSetts := s.getClientRequestFilteringSettings(ctx)
+	filterSetts.ParentalEnabled = false
+	filterSetts.SafeBrowsingEnabled = false
+	filterSetts.SafeSearchEnabled = false
+	filterSetts.ServicesRules = nil
+	ctx.setts = filterSetts
+
 	// Nothing to restrict.
 	return resultCodeSuccess
 }
@@ -405,15 +414,19 @@ func processFilteringBeforeRequest(ctx *dnsContext) (rc resultCode) {
 	var err error
 	ctx.protectionEnabled = s.conf.ProtectionEnabled && s.dnsFilter != nil
 	if ctx.protectionEnabled {
-		ctx.setts = s.getClientRequestFilteringSettings(ctx)
+		if ctx.setts == nil {
+			ctx.setts = s.getClientRequestFilteringSettings(ctx)
+		}
 		ctx.result, err = s.filterDNSRequest(ctx)
 	}
 	s.RUnlock()
 
 	if err != nil {
 		ctx.err = err
+
 		return resultCodeError
 	}
+
 	return resultCodeSuccess
 }
 

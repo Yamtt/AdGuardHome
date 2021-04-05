@@ -363,6 +363,7 @@ func (s *Server) setupResolvers(localAddrs []string) (err error) {
 
 		localAddrs = sysRes.Get()
 	}
+	log.Debug("LocalResolversAddrs: %v", localAddrs)
 
 	var ourAddrs []string
 	ourAddrs, err = s.collectDNSIPAddrs()

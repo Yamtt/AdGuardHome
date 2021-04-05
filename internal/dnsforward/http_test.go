@@ -30,6 +30,8 @@ func loadTestData(t *testing.T, casesFileName string, cases interface{}) {
 	require.NoError(t, err)
 }
 
+const jsonExt = ".json"
+
 func TestDNSForwardHTTTP_handleGetConfig(t *testing.T) {
 	filterConf := &dnsfilter.Config{
 		SafeBrowsingEnabled:   true,
@@ -83,9 +85,9 @@ func TestDNSForwardHTTTP_handleGetConfig(t *testing.T) {
 		},
 		name: "parallel",
 	}}
-	const casesFileName = "handleGetConfig_cases.json"
+
 	var data map[string]json.RawMessage
-	loadTestData(t, casesFileName, &data)
+	loadTestData(t, t.Name()+jsonExt, &data)
 
 	for _, tc := range testCases {
 		caseWant, ok := data[tc.name]
@@ -186,12 +188,11 @@ func TestDNSForwardHTTTP_handleSetConfig(t *testing.T) {
 		wantSet: "",
 	}}
 
-	const casesFileName = "handleSetConfig_cases.json"
 	var data map[string]struct {
 		Req  json.RawMessage `json:"req"`
 		Want json.RawMessage `json:"want"`
 	}
-	loadTestData(t, casesFileName, &data)
+	loadTestData(t, t.Name()+jsonExt, &data)
 
 	for _, tc := range testCases {
 		caseData, ok := data[tc.name]

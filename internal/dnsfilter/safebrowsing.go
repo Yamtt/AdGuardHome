@@ -190,7 +190,6 @@ func (c *sbCtx) getQuestion() string {
 	}
 
 	if c.svc == "SafeBrowsing" {
-		// See comment above.
 		aghstrings.WriteToBuilder(b, sbTXTSuffix)
 
 		return b.String()
